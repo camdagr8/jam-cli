@@ -13,7 +13,7 @@ You can now use `jam` globally.
 All jam commands should be run from your Jam root directory, for instance:
 ```sh
 $ cd "/My Jam/Project"
-$ jam list
+$ jam --version
 ```
 
 ```sh
