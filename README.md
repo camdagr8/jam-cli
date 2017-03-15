@@ -1,6 +1,21 @@
 
 # Jam Command-Line Interface
 
+## Getting started
+
+Install the Jam-CLI globally:
+```sh
+npm install -g brkfst-jam-cli
+```
+
+You can now use `jam` globally.
+
+All jam commands should be run from your Jam root directory, for instance:
+```sh
+$ cd "/My Jam/Project"
+$ jam list
+```
+
 ```sh
 Usage: jam [command] [options]
 
