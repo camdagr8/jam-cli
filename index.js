@@ -9,16 +9,52 @@ const log 			= console.log;
 const path 			= require('path');
 const program 		= require('commander');
 const slugify 		= require('slugify');
+const base 			= path.basename(process.cwd());
 
-program.version('1.0.0');
 
 
+/**
+ *
+ * err(...)
+ *
+ * @author Cam Tullos cam@tullos.ninja
+ * @since 0.1.0
+ *
+ * @description Formats error messages
+ */
+const err = (...args) => {
+	log('');
+	log(' ' , args.join(' '));
+	log('');
+};
+
+
+/**
+ *
+ * validType(type)
+ *
+ * @author Cam Tullos cam@tullos.ninja
+ * @since 1.0.0
+ *
+ * @description Validates the material type is an atom, molecule, or organism.
+ * @param type {String} The material type to validate.
+ * @returns {Boolean}
+ */
+const types = ['helper', 'plugin', 'widget'];
 const validType = (type) => {
 	if (!type) { return false; }
-	let types = ['atom', 'molecule', 'organism'];
 	type = String(type).toLowerCase();
 	return (types.indexOf(type) > -1);
 };
+
+
+
+
+
+// Initialize the program
+program.version('1.0.0');
+
+
 
 /**
  *
@@ -29,21 +65,27 @@ const validType = (type) => {
  *
  */
 program.command('create <type>')
-	.description('Creates the specified material <type> atom | molecule | organism')
-	.option('-c, --category [category]', 'The category to place the new material in')
-	.option('-d, --dna [dna]', 'The DNA ID')
-	.option('-n, --name <name>', 'The name of the material')
-	.action((cmd, opt) => {
+	.description('Creates the specified module <type>: ' + types.join(' | '))
+	.option('-c, --core', 'Determines if the module is to be created inside the _core application')
+	.option('-n, --name [name]', 'The name of the module')
+	.action((type, opt) => {
 
-		let cat = (opt.hasOwnProperty('category')) ? opt.category : null;
-		let dna = (opt.hasOwnProperty('dna')) ? opt.dna : null;
-		let name = (opt.hasOwnProperty('name')) ? opt.name : 'new-material';
+		// Validate the <type> value
+		if (validType(type) !== true) {
+			err('error:', 'create <type> must be `' + types.join('`, `') + '`');
+			return;
+		}
 
-		const base = path.basename(process.cwd());
 
-		log(chalk.yellow('creating:'), cmd, name, chalk.yellow('in'), base);
+		let core = (opt.hasOwnProperty('core')) ? '/_core' : '';
+		let name = (opt.hasOwnProperty('name')) ? opt.name : 'widget-' + Date.now();
 
-		log(chalk.green('created:'), cmd, name);
+
+		log(chalk.yellow('  creating:'), type, name, chalk.yellow('in'), '/' + base + core);
+
+		// DO SOME MAGIC HERE
+
+		log(chalk.green('  created:'), type, name);
 	});
 
 program.parse(process.argv);
