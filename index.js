@@ -7,13 +7,13 @@
  * Imports
  * -----------------------------------------------------------------------------
  */
-const beautify = require('js-beautify').js_beautify;
-const chalk = require('chalk');
-const fs = require('fs');
-const path = require('path');
-const pkg = require('./package.json');
-const program = require('commander');
-const slugify = require('slugify');
+const beautify    = require('js-beautify').js_beautify;
+const chalk       = require('chalk');
+const fs          = require('fs');
+const path        = require('path');
+const pkg         = require('./package.json');
+const program     = require('commander');
+const slugify     = require('slugify');
 
 
 /**
@@ -21,9 +21,9 @@ const slugify = require('slugify');
  * Constants
  * -----------------------------------------------------------------------------
  */
-const base = path.resolve(process.cwd());
-const log = console.log;
-const types = ['helper', 'plugin', 'widget'];
+const base     = path.resolve(process.cwd());
+const log      = console.log;
+const types    = ['helper', 'plugin', 'widget'];
 
 
 /**
@@ -50,9 +50,9 @@ program.version(pkg.version);
  * @description Creates a helper module
  */
 const createHelper = (type, opt) => {
-    let core = (opt.hasOwnProperty('core')) ? '_core' : '';
-    let name = (opt.hasOwnProperty('name')) ? opt.name : 'helper-' + Date.now();
-    let id = String(slugify(name)).toLowerCase();
+    let core    = (opt.hasOwnProperty('core')) ? '_core' : '';
+    let name    = (opt.hasOwnProperty('name')) ? opt.name : 'helper-' + Date.now();
+    let id      = String(slugify(name)).toLowerCase();
 
     // Get the module directory
     let mpath;
@@ -74,18 +74,18 @@ const createHelper = (type, opt) => {
 
 
     // Create the icon file
-    let ifile = mpath + '/icon.ejs';
-    let icon = '<path d="M10 10 H 90 V 90 H 10 L 10 10" />';
+    let ifile   = mpath + '/icon.ejs';
+    let icon    = '<path d="M10 10 H 90 V 90 H 10 L 10 10" />';
     fs.writeFileSync(ifile, icon);
 
     // Create the helper file
     let mod = `module.exports = {
-		id: '${id}',
+        id: '${id}',
 
-		wysiwyg: "{{${id} param='fubar'}}",
+        wysiwyg: "{{${id} param='fubar'}}",
 
-		helper: () => { return 'something'; }
-	};`
+        helper: () => { return 'something'; }
+    };`
 
     mod = beautify(mod);
 
@@ -109,9 +109,9 @@ const createHelper = (type, opt) => {
  */
 const createModule = (type, opt) => {
 
-    let core = (opt.hasOwnProperty('core')) ? '_core' : '';
-    let name = (opt.hasOwnProperty('name')) ? opt.name : 'module-' + Date.now();
-    let id = String(slugify(name)).toLowerCase();
+    let core    = (opt.hasOwnProperty('core')) ? '_core' : '';
+    let name    = (opt.hasOwnProperty('name')) ? opt.name : 'module-' + Date.now();
+    let id      = String(slugify(name)).toLowerCase();
 
 
     // Get the module directory
@@ -134,18 +134,18 @@ const createModule = (type, opt) => {
 
     // Create the mod.js file
     let mod = `module.exports = {
-		id: '${id}',
+        id: '${id}',
 
-		index: 1000000,
+        index: 1000000,
 
-		perms: ['all'],
+        perms: ['all'],
 
-		sections: ['all'],
+        sections: ['all'],
 
-		type: '${type}',
+        type: '${type}',
 
-		zone: 'widgets'
-	};`
+        zone: 'widgets'
+    };`
     mod = beautify(mod);
 
     let mfile = mpath + '/mod.js';
@@ -202,8 +202,8 @@ const list = () => {
 
             // Require the mod so we can get it's info
             try {
-                let mpath = p + '/' + dir + '/mod.js';
-                let mod = require(mpath);
+                let mpath  = p + '/' + dir + '/mod.js';
+                let mod    = require(mpath);
 
                 if (mod.hasOwnProperty('zone')) {
                     obj.zone = mod.zone;
