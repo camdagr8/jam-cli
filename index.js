@@ -164,6 +164,15 @@ const createModule = (type, opt) => {
 };
 
 
+/**
+ *
+ * list()
+ *
+ * @author Cam Tullos cam@tullos.ninja
+ * @since 1.0.0
+ *
+ * @description Outputs a list of installed modules
+ */
 const list = () => {
 
     let path = base + '/src/app';
@@ -252,7 +261,7 @@ const err = (...args) => {
  * @author Cam Tullos cam@tullos.ninja
  * @since 1.0.0
  *
- * @description Validates the material type is an atom, molecule, or organism.
+ * @description Validates the module type is a helper, plugin, widget.
  * @param type {String} The material type to validate.
  * @returns {Boolean}
  */
@@ -331,7 +340,6 @@ program.command('list')
         // Extra line
         log('');
     });
-
 
 /**
  * -----------------------------------------------------------------------------
