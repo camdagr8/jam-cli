@@ -26,7 +26,7 @@ Options:
 
 Commands:
 
-  create [options] <type>  Creates the specified module <type>: helper | plugin | widget
+  create <type> [options]  Creates the specified module <type>: helper | plugin | widget
 	  Options:
 
 	  -h, --help         output usage information

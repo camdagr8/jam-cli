@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <% include ../partials/head %>
+</head>
+<body>
+
+<% include ../partials/header %>
+
+<% if (rec['meta']['body']) { %>
+<%-core.hbsParse(rec.meta.body)%>
+<% } %>
+
+<% include ../partials/footer %>
+
+</body>
+</html>

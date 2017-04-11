@@ -31,10 +31,10 @@ const Promise       = require('Promise').default;
  * Constants
  * -----------------------------------------------------------------------------
  */
-const base     = path.resolve(process.cwd());
-const log      = console.log;
-const types    = ['helper', 'plugin', 'widget'];
-const jam      = 'https://github.com/camdagr8/jam/archive/master.zip';
+const base          = path.resolve(process.cwd());
+const log           = console.log;
+const types         = ['helper', 'plugin', 'widget', 'theme'];
+const jam           = 'https://github.com/camdagr8/jam/archive/master.zip';
 
 /**
  * -----------------------------------------------------------------------------
@@ -66,7 +66,12 @@ const create = (type, opt) => {
     if (type === 'helper') {
         createHelper(type, opt);
     }
+
+    if (type === 'theme') {
+        createTheme(type, opt);
+    }
 };
+
 
 /**
  *
@@ -185,6 +190,46 @@ const createModule = (type, opt) => {
 
 
     log(chalk.green('  created  module:'), id);
+};
+
+
+/**
+ *
+ * createTheme
+ *
+ * @author Cam Tullos cam@tullos.ninja
+ * @since 1.0.1
+ *
+ * @description Creates a stubbed theme
+ */
+const createTheme = (type, opt) => {
+
+    if (!opt.hasOwnProperty('name')) {
+        log(chalk.red('[jam] create theme error:'), '`name` is a required parameter');
+        process.exit();
+    }
+
+    let name     = slugify(opt.name);
+    let stubs    = `${__dirname}/stub/theme`;
+    let path     = `${base}/src/app/view/themes/${name}`;
+
+    // delete the previous version of the theme if it exists
+    fs.removeSync(path);
+
+    fs.ensureDirSync(`${path}/partials`);
+    fs.ensureDirSync(`${path}/templates`);
+
+    // Create the head partial
+    fs.createReadStream(`${stubs}/head.ejs`).pipe(fs.createWriteStream(`${path}/partials/head.ejs`));
+
+    // Create the header parital
+    fs.createReadStream(`${stubs}/header.ejs`).pipe(fs.createWriteStream(`${path}/partials/header.ejs`));
+
+    // Create the footer parital
+    fs.createReadStream(`${stubs}/footer.ejs`).pipe(fs.createWriteStream(`${path}/partials/footer.ejs`));
+
+    // Create the index file
+    fs.createReadStream(`${stubs}/index.ejs`).pipe(fs.createWriteStream(`${path}/templates/index.ejs`));
 };
 
 
