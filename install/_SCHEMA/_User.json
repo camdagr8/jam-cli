@@ -1,0 +1,1 @@
+{"_id":"_User","objectId":"string","updatedAt":"date","createdAt":"date","username":"string","email":"string","emailVerified":"boolean","authData":"object","roles":"object","prefs":"object","type":"string"}

@@ -1,0 +1,1 @@
+{"_id":"_Role","objectId":"string","updatedAt":"date","createdAt":"date","name":"string","users":"relation<_User>","roles":"relation<_Role>","level":"number"}

@@ -38,3 +38,5 @@ jspm_packages
 
 # Komodo Project files
 *.komodo*
+
+tmp

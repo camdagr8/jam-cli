@@ -20,10 +20,22 @@
   },
   "homepage": "https://github.com/camdagr8/jam-cli#readme",
   "dependencies": {
+    "Promise": "^1.0.5",
+    "bcryptjs": "^2.4.3",
     "chalk": "^1.1.3",
     "commander": "^2.9.0",
+    "decompress": "^4.0.0",
+    "fs-extra": "^2.1.2",
+    "git": "^0.1.5",
     "js-beautify": "^1.6.11",
-    "slugify": "^1.1.0"
+    "moment": "^2.18.1",
+    "mongodb": "^2.2.25",
+    "mongodb-backup": "^1.6.9",
+    "mongodb-restore": "^1.6.2",
+    "prompt": "^1.0.0",
+    "request": "^2.81.0",
+    "slugify": "^1.1.0",
+    "underscore": "^1.8.3"
   },
   "engines": {
     "node": "7.5.0",

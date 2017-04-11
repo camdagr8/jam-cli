@@ -1,0 +1,1 @@
+{"_id":"_Session","objectId":"string","updatedAt":"date","createdAt":"date","restricted":"boolean","user":"*_User","installationId":"string","sessionToken":"string","expiresAt":"date","createdWith":"object"}
