@@ -101,10 +101,7 @@ const createHelper = (type, opt) => {
     log(chalk.yellow('  creating helper:'), id, chalk.yellow('in'), mpath);
 
     // Create the module directory if it doesn't exist
-    if (!fs.existsSync(mpath)) {
-        fs.mkdirSync(mpath);
-    }
-
+    fs.ensureDirSync(mpath);
 
     // Create the icon file
     let ifile   = mpath + '/icon.ejs';
@@ -153,13 +150,10 @@ const createModule = (type, opt) => {
         mpath = mpath.replace(/\/\/+/g, '/');
     }
 
-
-    log(chalk.yellow('  creating module:'), id, chalk.yellow('in'), mpath);
+    log(chalk.yellow(`  creating ${type}:`), id);
 
     // Create the module directory if it doesn't exist
-    if (!fs.existsSync(mpath)) {
-        fs.mkdirSync(mpath);
-    }
+    fs.ensureDirSync(mpath);
 
     // Create the mod.js file
     let mod = `module.exports = {
@@ -188,8 +182,7 @@ const createModule = (type, opt) => {
         fs.writeFileSync(wfile, widget);
     }
 
-
-    log(chalk.green('  created  module:'), id);
+    log(chalk.green(`  created ${type}:`), id, 'in', mpath);
 };
 
 
@@ -209,15 +202,21 @@ const createTheme = (type, opt) => {
         process.exit();
     }
 
-    let name     = slugify(opt.name);
+    let name     = slugify(String(opt.name).toLowerCase());
     let stubs    = `${__dirname}/stub/theme`;
     let path     = `${base}/src/app/view/themes/${name}`;
+    let css      = `${base}/src/public/src/css`;
 
     // delete the previous version of the theme if it exists
     fs.removeSync(path);
 
     fs.ensureDirSync(`${path}/partials`);
     fs.ensureDirSync(`${path}/templates`);
+
+    fs.ensureDirSync(`${css}/${name}/`);
+    fs.writeFileSync(`${css}/${name}/.gitignore`, '# gitignore');
+    fs.writeFileSync(`${css}/${name}.scss`, `/* ${name} styles */`);
+
 
     // Create the head partial
     fs.createReadStream(`${stubs}/head.ejs`).pipe(fs.createWriteStream(`${path}/partials/head.ejs`));
@@ -230,6 +229,8 @@ const createTheme = (type, opt) => {
 
     // Create the index file
     fs.createReadStream(`${stubs}/index.ejs`).pipe(fs.createWriteStream(`${path}/templates/index.ejs`));
+
+    log(chalk.green(`  created  theme:`), name);
 };
 
 
