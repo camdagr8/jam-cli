@@ -17,25 +17,19 @@ $ jam --version
 ```
 
 ```sh
-Usage: jam [command] [options]
+Usage: jam [options] [command]
+
+Commands:
+
+    create <type> [options]  Creates the specified module <type>: helper | plugin | widget | theme
+    backup [options]         Backup MongoDB <db> to directory <path>
+    list                     Lists installed modules and helpers
+    restore [options]        Restore MongoDB <db> from directory <path>
+    migrate [options]        Migrate from one MongoDb to another
+    install [options]        Install Jam from Git
 
 Options:
 
     -h, --help     output usage information
     -V, --version  output the version number
-
-Commands:
-
-  create <type> [options]  Creates the specified module <type>: helper | plugin | widget
-	  Options:
-
-	  -h, --help         output usage information
-	  -c, --core         Determines if the module is to be created inside the _core application
-	  -n, --name [name]  The name of the module
-	  -p, --path [path]  The absolute path where to create the module
-
-
-  list                     Lists installed modules and helpers
-
-
 ```
