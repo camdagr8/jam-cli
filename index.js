@@ -3,7 +3,7 @@
 'use strict';
 
 /**
- * TODO: update install to use progress bar.
+ * TODO: Create launch command.
  */
 
 /**
@@ -30,17 +30,19 @@ const assert         = require('assert');
 const bcrypt         = require('bcryptjs');
 const Promise        = require('Promise').default;
 const ProgressBar    = require('progress');
+const spawn          = require('child_process').spawn;
+const ora            = require('ora');
 
 /**
  * -----------------------------------------------------------------------------
  * Constants
  * -----------------------------------------------------------------------------
  */
-const base      = path.resolve(process.cwd());
-const log       = console.log;
-const types     = ['helper', 'plugin', 'widget', 'theme'];
-const jam       = 'https://github.com/camdagr8/jam/archive/master.zip';
-const prefix    = chalk.red('[jam]');
+const base           = path.resolve(process.cwd());
+const log            = console.log;
+const types          = ['helper', 'plugin', 'widget', 'theme'];
+const prefix         = chalk.red('[jam]');
+const config         = require(__dirname + "/config.json");
 
 /**
  * -----------------------------------------------------------------------------
@@ -89,7 +91,7 @@ const prompter = (type, opt, schema, callback) => {
     });
 
     prompt.message   = prefix + ' > ';
-    prompt.delimiter = '';
+    prompt.delimiter = ' ';
     prompt.override  = params;
     prompt.start();
     prompt.get(schema, (err, result) => {
@@ -144,8 +146,8 @@ const helper = {
         // Create the module directory if it doesn't exist
         fs.ensureDirSync(mpath);
 
-        let bar = new ProgressBar(chalk.red(':bar') + ' :percent', {
-            complete: chalk.bgRed(' '),
+        let bar = new ProgressBar(chalk.green(':bar') + ' :percent', {
+            complete: chalk.bgGreen(' '),
             incomplete: ' ',
             width: 20,
             total: 2
@@ -213,8 +215,8 @@ const plugin = {
         // Create the module directory if it doesn't exist
         fs.ensureDirSync(mpath);
 
-        let bar = new ProgressBar(chalk.red(':bar') + ' :percent', {
-            complete: chalk.bgRed(' '),
+        let bar = new ProgressBar(chalk.green(':bar') + ' :percent', {
+            complete: chalk.bgGreen(' '),
             incomplete: ' ',
             width: 20,
             total: 2
@@ -281,8 +283,8 @@ const theme = {
         let stubs    = `${__dirname}/stub/theme`;
         let path     = `${base}/src/app/view/themes/${name}`;
         let css      = `${base}/src/public/src/css`;
-        let bar      = new ProgressBar(chalk.red(':bar') + ' :percent', {
-            complete      : chalk.bgRed(' '),
+        let bar      = new ProgressBar(chalk.green(':bar') + ' :percent', {
+            complete      : chalk.bgGreen(' '),
             incomplete    : ' ',
             width         : 20,
             total         : 10
@@ -340,7 +342,6 @@ const theme = {
  * @description Outputs a list of installed modules
  */
 const list = () => {
-    log(chalk.yellow('[jam] list scanning...'));
 
     let path = base + '/src/app';
 
@@ -360,7 +361,7 @@ const list = () => {
 
         // Exit if the mod.js file isn't in the module directory
         if (!fs.existsSync(p)) {
-            log(chalk.red('[jam] list error: invalid path'), p);
+            log(prefix, 'list error: invalid path', p);
             return;
         }
 
@@ -395,13 +396,10 @@ const list = () => {
     });
 
     if (items.length > 0) {
-        log('');
-        log(beautify(JSON.stringify(items)));
+        log('\n' + beautify(JSON.stringify(items)));
     }
 
-    log('');
-    log(chalk.green('[jam] list complete!'));
-    log('');
+    log('\n' + prefix, 'list complete!\n');
 };
 
 
@@ -435,14 +433,22 @@ const validType = (type) => {
  * @description Restore a MongoDB from file
  */
 const do_restore = (opt, callback) => {
-    log(chalk.yellow('[jam] restoring...'));
+    let spinner = ora({
+        text       : 'Restoring database...',
+        spinner    : 'dots',
+        color      : 'green'
+    });
 
-    let errs = [];
+    spinner.start();
+
     let reqs = ['db', 'path'];
-    reqs.forEach((p) => { if (!opt.hasOwnProperty(p)) { errs.push(p); } });
-    if (errs.length > 0) {
-        errs.forEach((err) => { log(chalk.red('[jam] backup error:'), `--${err} is a required parameter`); });
-        return;
+    for (let i = 0; i < reqs.length; i++) {
+        let p = reqs[i];
+        if (!opt.hasOwnProperty(p)) {
+            spinner.fail(`${p} is a required parameter`);
+            process.exit();
+            return;
+        }
     }
 
     let f = moment().valueOf();
@@ -470,8 +476,8 @@ const do_restore = (opt, callback) => {
     }
 
     params['callback'] = function () {
-        if (typeof callback === 'function') { callback(opt); }
-        log(chalk.green('[jam] restore complete'), params.root);
+        if (typeof callback === 'function') { callback(opt, spinner); }
+        spinner.succeed('Restore complete!\n');
     };
 
     restore(params);
@@ -487,15 +493,23 @@ const do_restore = (opt, callback) => {
  *
  * @description Backup a MongoDB to file
  */
-const do_backup = (opt, callback) => {
-    log(chalk.yellow('[jam] backup...'));
+const do_backup = (opt) => {
+    let spinner = ora({
+        text       : 'Backing up database...',
+        spinner    : 'dots',
+        color      : 'green'
+    });
 
-    let errs = [];
+    spinner.start();
+
     let reqs = ['db', 'path'];
-    reqs.forEach((p) => { if (!opt.hasOwnProperty(p)) { errs.push(p); } });
-    if (errs.length > 0) {
-        errs.forEach((err) => { log(chalk.red('[jam] backup error:'), `--${err} is a required parameter`); });
-        return;
+    for (let i = 0; i < reqs.length; i++) {
+        let p = reqs[i];
+        if (!opt.hasOwnProperty(p)) {
+            spinner.fail(`${p} is a required parameter`);
+            process.exit();
+            return;
+        }
     }
 
     let f = moment().valueOf();
@@ -516,7 +530,7 @@ const do_backup = (opt, callback) => {
     }
 
     params['callback'] = function () {
-        log(chalk.green('[jam] backup complete'), params.root);
+        spinner.succeed('Backup complete!\n');
     };
 
     backup(params);
@@ -533,14 +547,24 @@ const do_backup = (opt, callback) => {
  * @description Migrate from one MongoDb to another
  */
 const do_migration = (opt) => {
-    log(chalk.yellow('[jam] migrating...'));
+    let spinner = ora({
+        text       : 'Migrating database...',
+        spinner    : 'dots',
+        color      : 'green'
+    });
 
-    let errs = [];
+    log('');
+
+    spinner.start();
+
     let reqs = ['from', 'to'];
-    reqs.forEach((p) => { if (!opt.hasOwnProperty(p)) { errs.push(p); } });
-    if (errs.length > 0) {
-        errs.forEach((err) => { log(chalk.red('[jam] migrate error:'), `--${err} is a required parameter`); });
-        return;
+    for (let i = 0; i < reqs.length; i++) {
+        let p = reqs[i];
+        if (!opt.hasOwnProperty(p)) {
+            spinner.fail(`${p} is a required parameter`);
+            process.exit();
+            return;
+        }
     }
 
     fs.ensureDirSync(`${base}/tmp`);
@@ -561,10 +585,10 @@ const do_migration = (opt) => {
         params['collections']  = col.split(',');
     }
 
-    let rparams = _.clone(params);
-    delete rparams.callback;
+    let rparams       = _.clone(params);
+    rparams['uri']    = opt.to;
 
-    rparams['uri'] = opt.to;
+    delete rparams.callback;
 
     if (opt.hasOwnProperty('clear')) {
         if (rparams.hasOwnProperty('collections')) {
@@ -579,14 +603,10 @@ const do_migration = (opt) => {
 
         fs.removeSync(rparams.root);
 
-        log(chalk.green('[jam] migration complete'), rparams.uri);
+        spinner.succeed('Migration complete!\n');
     };
 
     params['callback'] = function () {
-        log(chalk.green(`[jam] backup complete ${rparams.uri}`));
-
-        log(chalk.yellow(`[jam] restoring ${rparams.uri}... This may take awhile!`));
-
         restore(rparams);
     };
 
@@ -605,6 +625,10 @@ const do_migration = (opt) => {
  * @description The install process
  */
 const install = {
+    bar: null,
+
+    spinner: null,
+
     init: (opt) => {
         let contents = [];
         fs.readdirSync(base).forEach((dir) => { if (dir.substr(0, 1) !== '.') { contents.push(dir); } });
@@ -703,20 +727,28 @@ const install = {
     },
 
     start: (opt) => {
-        log(chalk.yellow('[jam] downloading... this may take awhile.'));
+        install.bar = new ProgressBar(chalk.green(':bar') + ' :percent', {
+            complete      : chalk.bgGreen(' '),
+            incomplete    : ' ',
+            width         : 20,
+            total         : 7
+        });
+
+        log(prefix, 'Downloading...\n');
+
+        install.bar.tick();
 
         // Create the tmp directory if it doesn't exist.
         fs.ensureDirSync(`${base}/tmp`);
 
         // Download the most recent version of jam
-        request(jam)
+        request(config.install)
         .pipe(fs.createWriteStream(`${base}/tmp/jam.zip`))
         .on('close', function () {
-            log(chalk.yellow('[jam] download complete!'));
-            log(chalk.yellow('[jam] unzipping...'));
+            install.bar.tick();
 
             // next -> unzip
-            setTimeout(install.unzip, 2000, opt);
+            setTimeout(install.unzip, 1000, opt);
         });
     },
 
@@ -724,6 +756,7 @@ const install = {
         decompress(`${base}/tmp/jam.zip`, base, {strip: 1}).then(() => {
             // Delete the tmp directory
             fs.removeSync(`${base}/tmp`);
+            install.bar.tick();
 
             // next -> configure
             setTimeout(install.configure, 1000, opt);
@@ -731,7 +764,6 @@ const install = {
     },
 
     configure: (opt) => {
-        log(chalk.yellow('[jam] configuring environment...'));
 
         let env                = require(`${base}/src/env.json`);
         env['SERVER_URI']      = 'http://localhost:' + opt.port;
@@ -740,14 +772,13 @@ const install = {
 
         // Write the updates to the env.json
         fs.writeFileSync(`${base}/src/env.json`, beautify(JSON.stringify(env)));
+        install.bar.tick();
 
         // next -> restore
-        setTimeout(install.restore, 2000, opt);
+        setTimeout(install.restore, 1000, opt);
     },
 
     restore: (opt) => {
-        log(chalk.yellow('[jam] loading data...'));
-
         let params = {
             root: __dirname + '/install',
             uri: opt.db,
@@ -759,27 +790,27 @@ const install = {
         };
 
         restore(params);
+        install.bar.tick();
     },
 
     update_admin: (params) => {
         const opt = params;
 
-        log(chalk.yellow('[jam] connecting to database...'));
-
         // connect to db
         mongo.connect(opt.db, function (err, db) {
             if (err) {
-                log(chalk.red('[jam] install error:'), err.message);
+                install.bar.interrupt('install error: ' + err);
+                install.bar.terminate();
                 process.exit();
                 return;
             }
 
-            log(chalk.yellow('[jam] connected!'));
-            log(chalk.yellow('[jam] creating admin user...'));
+            install.bar.tick();
 
             bcrypt.hash(opt.password, 10, function (err, password) {
                 if (err) {
-                    log(chalk.red('[jam] install error:'), err.message);
+                    install.bar.interrupt('install error: ' + err);
+                    install.bar.terminate();
                     process.exit();
                     return;
                 }
@@ -788,8 +819,8 @@ const install = {
                 collection.updateOne({_id: "u5fMpRs2SP"}, {
                     $set: {
                         "_hashed_password"    : password,
-                        "username"    : opt.username,
-                        "email"       : opt.username
+                        "username"            : opt.username,
+                        "email"               : opt.username
                     }
                 }, function (err) {
                     if (err) {
@@ -799,13 +830,46 @@ const install = {
                     }
 
                     assert.equal(err, null);
-                    log(chalk.green('[jam] install complete!'));
-                    log('[jam] run `npm test` to launch the dev instance');
                     db.close();
-                    process.exit();
+
+                    install.bar.tick();
+                    install.bar.terminate();
+                    setTimeout(install.npm, 2000, opt);
                 });
             });
         })
+    },
+
+    npm: () => {
+        install.spinner = ora({
+            text: 'Installing node modules...',
+            spinner: 'dots',
+            color: 'green'
+        });
+
+        install.spinner.start();
+
+        let pi = false;
+        let npm = spawn('npm', ['install']);
+        npm.stdout.on('data', (data) => {
+
+            let txt = data.toString().replace(/\r?\n|\r/g, '');
+
+            if (txt.indexOf('post_install.js') > -1 && pi !== true) { pi = true; }
+            if (pi === true) { return; }
+
+            install.spinner.text = txt;
+        });
+
+        npm.stdout.on('close', function () {
+           install.complete();
+        });
+    },
+
+    complete: () => {
+        install.spinner.succeed('Install complete!');
+        log('\n' + prefix, 'Run `jam launch` to start the local instance\n');
+        process.exit();
     }
 };
 
@@ -867,8 +931,53 @@ program.command('backup')
     .option('-p, --path <path>', '{String} the absolute path where to save the backup')
     .option('-z, --zip [zip]', '{String} pack collections into a <zip>.tar file')
     .option('-t, --type [type]', '{String} the parser type (bson|json)')
-    .option('-collections, --collections [collections]', '{Array} which collections to save')
-    .action(do_backup)
+    .option('-c, --collections [collections]', '{Array} which collections to save')
+    .action((opt) => {
+        let params = {};
+
+        _.keys(opt._events).forEach((key) => {
+            if (opt.hasOwnProperty(key)) {
+                params[key] = opt[key];
+            } else {
+                delete params[key];
+            }
+        });
+
+        let schema = {
+            properties: {
+                db: {
+                    required       : true,
+                    message        : 'db is a required parameter',
+                    description    : chalk.yellow('MongoDB connection:')
+                },
+                path: {
+                    required       : true,
+                    message        : 'path is a required parameter',
+                    description    : chalk.yellow('Output path:'),
+                }
+            }
+        };
+
+        prompt.message   = prefix + ' > ';
+        prompt.delimiter = ' ';
+        prompt.override  = params;
+        prompt.start();
+        prompt.get(schema, (err, result) => {
+            if (err) {
+                log(prefix, 'error:', err);
+                process.exit();
+            } else {
+                _.keys(prompt.override).forEach((key) => { result[key] = prompt.override[key]; });
+                _.keys(result).forEach((key) => {
+                    if (_.isEmpty(result[key])) {
+                        delete result[key];
+                    }
+                });
+
+                do_backup(result);
+            }
+        });
+    })
     .on('--help', () => {
         log('  Examples:');
         log('      $ jam backup --db mongodb://dbuser:dbpassword@dbdomain.mongolab.com:27017/dbname --path "/backup/location" --collections "User,Session"');
@@ -881,12 +990,57 @@ program.command('backup')
 program.command('restore')
     .description('Restore MongoDB <db> from directory <path>')
     .option('-d, --db <db>', '{String} URI for MongoDB connection')
-    .option('-p, --path <path>', '{String} the absolute path where to save the backup')
+    .option('-p, --path <path>', '{String} the absolute path where to restore from')
     .option('-z, --zip [zip]', '{Boolean} unpack collections from a .tar file')
     .option('-t, --type [type]', '{String} the parser type (bson|json)')
     .option('-collections, --collections [collections]', '{Array} which collections to restore')
     .option('-c, --clear [clear]', '{Boolean} drop collections before restore. If (--collections) is specified, only those collections will be dropped')
-    .action(do_restore)
+    .action((opt) => {
+        let params = {};
+
+        _.keys(opt._events).forEach((key) => {
+            if (opt.hasOwnProperty(key)) {
+                params[key] = opt[key];
+            } else {
+                delete params[key];
+            }
+        });
+
+        let schema = {
+            properties: {
+                db: {
+                    required       : true,
+                    message        : 'db is a required parameter',
+                    description    : chalk.yellow('MongoDB connection:')
+                },
+                path: {
+                    required       : true,
+                    message        : 'path is a required parameter',
+                    description    : chalk.yellow('Input path:'),
+                }
+            }
+        };
+
+        prompt.message   = prefix + ' > ';
+        prompt.delimiter = ' ';
+        prompt.override  = params;
+        prompt.start();
+        prompt.get(schema, (err, result) => {
+            if (err) {
+                log(prefix, 'error:', err);
+                process.exit();
+            } else {
+                _.keys(prompt.override).forEach((key) => { result[key] = prompt.override[key]; });
+                _.keys(result).forEach((key) => {
+                    if (_.isEmpty(result[key])) {
+                        delete result[key];
+                    }
+                });
+
+                do_restore(result);
+            }
+        });
+    })
     .on('--help', () => {
         log('  Examples:');
         log('      $ jam restore --db mongodb://dbuser:dbpassword@dbdomain.mongolab.com:27017/dbname --path "/backup/location/dbname" --clear true');
@@ -897,13 +1051,58 @@ program.command('restore')
 
 
 program.command('migrate')
-    .description('Migrate from one MongoDb to another')
+    .description('Migrate from one MongoDB to another')
     .option('-f, --from <db>', '{String} URI for MongoDB connection to restore from')
     .option('-t, --to <db>', '{String} URI for MongoDB connection to restore to')
     .option('-z, --zip [zip]', '{String} Pack collections into a .tar file')
     .option('-collections, --collections [collections]', '{Array} which collections to migrate')
     .option('-c, --clear [clear]', '{Boolean} drop collections before migration. If (--collections) is specified, only those collections will be dropped')
-    .action(do_migration)
+    .action((opt) => {
+        let params = {};
+
+        _.keys(opt._events).forEach((key) => {
+            if (opt.hasOwnProperty(key)) {
+                params[key] = opt[key];
+            } else {
+                delete params[key];
+            }
+        });
+
+        let schema = {
+            properties: {
+                from: {
+                    required       : true,
+                    message        : 'from is a required parameter',
+                    description    : chalk.yellow('From MongoDB connection:')
+                },
+                to: {
+                    required       : true,
+                    message        : 'to is a required parameter',
+                    description    : chalk.yellow('  To MongoDB connection:'),
+                }
+            }
+        };
+
+        prompt.message   = prefix + ' > ';
+        prompt.delimiter = ' ';
+        prompt.override  = params;
+        prompt.start();
+        prompt.get(schema, (err, result) => {
+            if (err) {
+                log(prefix, 'error:', err);
+                process.exit();
+            } else {
+                _.keys(prompt.override).forEach((key) => { result[key] = prompt.override[key]; });
+                _.keys(result).forEach((key) => {
+                    if (_.isEmpty(result[key])) {
+                        delete result[key];
+                    }
+                });
+
+                do_migration(result);
+            }
+        });
+    })
     .on('--help', () => {
         log('  Examples:');
         log('      $ jam backup --from mongodb://dbuser:dbpassword@dbdomain.mongolab.com:27429/dbname--to mongodb://dbuser:dbpassword@localhost:27017/dbname');
@@ -923,6 +1122,98 @@ program.command('install')
     .on('--help', () => {
         log('  Examples:');
         log('      $ jam install -u john@doe.com');
+        // Extra line
+        log('');
+    });
+
+
+program.command('launch')
+    .description('Launch Jam dev environment')
+    .action(() => {
+
+        let spinner = ora({
+            text       : 'Launching Jam...',
+            spinner    : 'dots',
+            color      : 'green'
+        });
+
+        log('');
+
+        spinner.start();
+
+        let msg     = 'Running Jam: Press cntr + c to exit  ';
+        let gulp    = spawn('gulp', ['--dev']);
+
+        gulp.stdout.on('data', function (data) {
+            let txt    = data.toString();
+            txt        = txt.replace(/\r?\n|\r/g, '');
+            txt        = txt.replace( /-+/g, '-');
+            txt        = String(txt).trim();
+            txt        = (txt.length < 3) ? msg : txt;
+            txt        = (txt.indexOf('waiting for changes before restart') > -1) ? msg : txt;
+
+            spinner.text = txt;
+        });
+    })
+    .on('--help', () => {
+        log('  Examples:');
+        log('    $ jam launch');
+
+        // Extra line
+        log('');
+    });
+
+
+program.command('build')
+    .description('Build Jam for deployment')
+    .action(() => {
+
+        let spinner = ora({
+            text: 'Building Jam...',
+            spinner: 'dots',
+            color: 'green',
+        });
+
+        spinner.start();
+
+        let gulp = spawn('gulp');
+        gulp.stdout.on('data', function (data) {
+            let txt    = data.toString();
+            txt        = txt.replace(/\r?\n|\r/g, '');
+            txt        = txt.replace( /\--+/g, '');
+
+            spinner.text = txt;
+        });
+
+        gulp.stdout.on('close', function () {
+            spinner.succeed('Build Complete!\n');
+        });
+    })
+    .on('--help', () => {
+        log('  Examples:');
+        log('    $ jam build');
+
+        // Extra line
+        log('');
+    });
+
+
+program.command('set')
+    .description('Set configuration key:value pairs')
+    .option('-k, --key <key>', 'the configuration property to set ['+_.keys(config).join('|')+']')
+    .option('-v, --value <value>', 'the configuration property value')
+    .action((opt) => {
+        config[opt.key] = opt.value;
+
+        let cfile = __dirname + '/config.json';
+        fs.writeFileSync(cfile, beautify(JSON.stringify(config)));
+
+        log(prefix, 'updated config.json');
+    })
+    .on('--help', () => {
+        log('  Examples:');
+        log('    $ butter set -k theme -v "my-theme"');
+
         // Extra line
         log('');
     });
