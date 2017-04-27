@@ -32,6 +32,7 @@
     "mongodb": "^2.2.25",
     "mongodb-backup": "^1.6.9",
     "mongodb-restore": "^1.6.2",
+    "progress": "^2.0.0",
     "prompt": "^1.0.0",
     "request": "^2.81.0",
     "slugify": "^1.1.0",

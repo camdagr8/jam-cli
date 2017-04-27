@@ -3,38 +3,44 @@
 'use strict';
 
 /**
+ * TODO: update install to use progress bar.
+ */
+
+/**
  * -----------------------------------------------------------------------------
  * Imports
  * -----------------------------------------------------------------------------
  */
-const beautify      = require('js-beautify').js_beautify;
-const chalk         = require('chalk');
-const fs            = require('fs-extra');
-const path          = require('path');
-const pkg           = require('./package.json');
-const program       = require('commander');
-const slugify       = require('slugify');
-const backup        = require('mongodb-backup');
-const restore       = require('mongodb-restore');
-const _             = require('underscore');
-const moment        = require('moment');
-const prompt        = require('prompt');
-const request       = require('request');
-const decompress    = require('decompress');
-const mongo         = require('mongodb').MongoClient;
-const assert        = require('assert');
-const bcrypt        = require('bcryptjs');
-const Promise       = require('Promise').default;
+const beautify       = require('js-beautify').js_beautify;
+const chalk          = require('chalk');
+const fs             = require('fs-extra');
+const path           = require('path');
+const pkg            = require('./package.json');
+const program        = require('commander');
+const slugify        = require('slugify');
+const backup         = require('mongodb-backup');
+const restore        = require('mongodb-restore');
+const _              = require('underscore');
+const moment         = require('moment');
+const prompt         = require('prompt');
+const request        = require('request');
+const decompress     = require('decompress');
+const mongo          = require('mongodb').MongoClient;
+const assert         = require('assert');
+const bcrypt         = require('bcryptjs');
+const Promise        = require('Promise').default;
+const ProgressBar    = require('progress');
 
 /**
  * -----------------------------------------------------------------------------
  * Constants
  * -----------------------------------------------------------------------------
  */
-const base          = path.resolve(process.cwd());
-const log           = console.log;
-const types         = ['helper', 'plugin', 'widget', 'theme'];
-const jam           = 'https://github.com/camdagr8/jam/archive/master.zip';
+const base      = path.resolve(process.cwd());
+const log       = console.log;
+const types     = ['helper', 'plugin', 'widget', 'theme'];
+const jam       = 'https://github.com/camdagr8/jam/archive/master.zip';
+const prefix    = chalk.red('[jam]');
 
 /**
  * -----------------------------------------------------------------------------
@@ -49,190 +55,280 @@ program.version(pkg.version);
  * -----------------------------------------------------------------------------
  */
 const create = (type, opt) => {
-    log(chalk.yellow(`[jam] create ${type}`));
 
     // Validate the <type> value
     if (validType(type) !== true) {
-        log(chalk.red(`[jam] create error: <type> must be ${types.join(',')}`));
+        log(prefix, `create error: <type> must be ${types.join(',')}`);
         return;
     }
 
     type = String(type).toLowerCase();
 
     if (type === 'plugin' || type === 'widget') {
-        createModule(type, opt);
+        plugin.prompt(type, opt);
     }
 
     if (type === 'helper') {
-        createHelper(type, opt);
+        helper.prompt(type, opt);
     }
 
     if (type === 'theme') {
-        createTheme(type, opt);
+        theme.prompt(type, opt);
     }
 };
 
+const prompter = (type, opt, schema, callback) => {
+    let params = {};
 
-/**
- *
- * createHelper(type, opt)
- *
- * @author Cam Tullos cam@tullos.ninja
- * @since 1.0.0
- *
- * @description Creates a helper module
- */
-const createHelper = (type, opt) => {
-    let core    = (opt.hasOwnProperty('core')) ? '_core' : '';
-    let name    = (opt.hasOwnProperty('name')) ? opt.name : 'helper-' + Date.now();
-    let id      = String(slugify(name)).toLowerCase();
+    _.keys(opt._events).forEach((key) => {
+        if (opt.hasOwnProperty(key)) {
+            params[key] = opt[key];
+        } else {
+            delete params[key];
+        }
+    });
 
-    // Get the module directory
-    let mpath;
+    prompt.message   = prefix + ' > ';
+    prompt.delimiter = '';
+    prompt.override  = params;
+    prompt.start();
+    prompt.get(schema, (err, result) => {
+        if (err) {
+            log(prefix, chalk.red('error:'), err);
+            process.exit();
+        } else {
+            _.keys(prompt.override).forEach((key) => { result[key] = prompt.override[key]; });
+            _.keys(result).forEach((key) => {
+                if (_.isEmpty(result[key])) {
+                    delete result[key];
+                }
+            });
 
-    if (opt.hasOwnProperty('path')) {
-        mpath = opt.path;
-    } else {
-        mpath = ['', base, 'src/app', core, 'helper', id];
-        mpath = mpath.join('/');
-        mpath = mpath.replace(/\/\/+/g, '/');
-    }
-
-    log(chalk.yellow('  creating helper:'), id, chalk.yellow('in'), mpath);
-
-    // Create the module directory if it doesn't exist
-    fs.ensureDirSync(mpath);
-
-    // Create the icon file
-    let ifile   = mpath + '/icon.ejs';
-    let icon    = `<path d="M10 10 H 90 V 90 H 10 L 10 10" />`;
-    fs.writeFileSync(ifile, icon);
-
-    // Create the helper file
-    let mod = `module.exports = {
-        id: '${id}',
-
-        wysiwyg: "{{${id} param='fubar'}}",
-
-        helper: () => { return 'something'; }
-    };`;
-
-    mod = beautify(mod);
-    fs.writeFileSync(`${mpath}/mod.js`, mod);
-
-    log(chalk.green('  created  helper:'), id);
+            callback(type, result);
+        }
+    });
 };
 
+const helper = {
+    prompt: (type, opt) => {
 
-/**
- *
- * createModule(type, opt)
- *
- * @author Cam Tullos cam@tullos.ninja
- * @since 1.0.0
- *
- * @description Creates a plugin or widget module
- */
-const createModule = (type, opt) => {
+        let schema = {
+            properties: {
+                name: {
+                    required:    true,
+                    description: chalk.yellow('Name:'),
+                    message:     'Name is required'
+                }
+            }
+        };
 
-    let core    = (opt.hasOwnProperty('core')) ? '_core' : '';
-    let name    = (opt.hasOwnProperty('name')) ? opt.name : 'module-' + Date.now();
-    let id      = String(slugify(name)).toLowerCase();
+        prompter(type, opt, schema, helper.create);
+    },
 
+    create: (type, opt) => {
+        let core    = (opt.hasOwnProperty('core')) ? '_core' : '';
+        let name    = (opt.hasOwnProperty('name')) ? opt.name : 'helper-' + Date.now();
+        let id      = String(slugify(name)).toLowerCase();
 
-    // Get the module directory
-    let mpath = '';
-    if (opt.hasOwnProperty('path')) {
-        mpath = opt.path;
-    } else {
-        mpath = ['', base, 'src/app', core, 'plugin', id];
-        mpath = mpath.join('/');
-        mpath = mpath.replace(/\/\/+/g, '/');
+        // Get the module directory
+        let mpath;
+
+        if (opt.hasOwnProperty('path')) {
+            mpath = opt.path;
+        } else {
+            mpath = ['', base, 'src/app', core, 'helper', id];
+            mpath = mpath.join('/');
+            mpath = mpath.replace(/\/\/+/g, '/');
+        }
+
+        // Create the module directory if it doesn't exist
+        fs.ensureDirSync(mpath);
+
+        let bar = new ProgressBar(chalk.red(':bar') + ' :percent', {
+            complete: chalk.bgRed(' '),
+            incomplete: ' ',
+            width: 20,
+            total: 2
+        });
+
+        // Create the icon file
+        let ifile   = mpath + '/icon.ejs';
+        if (!fs.existsSync(ifile)) {
+            let icon = `<path d="M10 10 H 90 V 90 H 10 L 10 10" />`;
+            fs.writeFileSync(ifile, icon);
+        }
+        bar.tick();
+
+        // Create the helper file
+        let mfile = mpath + '/mod.js';
+        if (!fs.existsSync(mfile)) {
+            let mod = `module.exports = {
+                id: '${id}',
+        
+                wysiwyg: "{{${id} foo='bar'}}",
+        
+                helper: (opt) => { return opt.hash.foo; }
+            };`;
+
+            mod = beautify(mod);
+            fs.writeFileSync(mfile, mod);
+        } else {
+            bar.interrupt('helper:', id, 'already exists');
+        }
+
+        bar.tick();
     }
-
-    log(chalk.yellow(`  creating ${type}:`), id);
-
-    // Create the module directory if it doesn't exist
-    fs.ensureDirSync(mpath);
-
-    // Create the mod.js file
-    let mod = `module.exports = {
-        id: '${id}',
-
-        index: 1000000,
-
-        perms: ['all'],
-
-        sections: ['all'],
-
-        type: '${type}',
-
-        zone: 'widgets'
-    };`;
-    mod = beautify(mod);
-
-    let mfile = mpath + '/mod.js';
-    fs.writeFileSync(mfile, mod);
-
-    // Create the widget.ejs file
-    if (type === 'widget') {
-        let wfile = mpath + '/widget.ejs';
-        let widget = `<!--// Widget ${id} //-->`;
-
-        fs.writeFileSync(wfile, widget);
-    }
-
-    log(chalk.green(`  created ${type}:`), id, 'in', mpath);
 };
 
+const plugin = {
+    prompt: (type, opt) => {
+        let schema = {
+            properties: {
+                name: {
+                    required:    true,
+                    description: chalk.yellow('Name:'),
+                    message:     'Name is required'
+                }
+            }
+        };
 
-/**
- *
- * createTheme
- *
- * @author Cam Tullos cam@tullos.ninja
- * @since 1.0.1
- *
- * @description Creates a stubbed theme
- */
-const createTheme = (type, opt) => {
+        prompter(type, opt, schema, plugin.create);
+    },
 
-    if (!opt.hasOwnProperty('name')) {
-        log(chalk.red('[jam] create theme error:'), '`name` is a required parameter');
-        process.exit();
+    create: (type, opt) => {
+        let core    = (opt.hasOwnProperty('core')) ? '_core' : '';
+        let name    = (opt.hasOwnProperty('name')) ? opt.name : 'module-' + Date.now();
+        let id      = String(slugify(name)).toLowerCase();
+
+        // Get the module directory
+        let mpath = '';
+        if (opt.hasOwnProperty('path')) {
+            mpath = opt.path;
+        } else {
+            mpath = ['', base, 'src/app', core, 'plugin', id];
+            mpath = mpath.join('/');
+            mpath = mpath.replace(/\/\/+/g, '/');
+        }
+
+        // Create the module directory if it doesn't exist
+        fs.ensureDirSync(mpath);
+
+        let bar = new ProgressBar(chalk.red(':bar') + ' :percent', {
+            complete: chalk.bgRed(' '),
+            incomplete: ' ',
+            width: 20,
+            total: 2
+        });
+
+        let mfile = mpath + '/mod.js';
+        if (!fs.existsSync(mfile)) {
+
+            // Create the mod.js file
+            let mod = `module.exports = {
+                id: '${id}',
+        
+                index: 1000000,
+        
+                perms: ['all'],
+        
+                sections: ['all'],
+        
+                type: '${type}',
+        
+                zone: 'widgets'
+            };`;
+
+            mod = beautify(mod);
+
+            fs.writeFileSync(mfile, mod);
+            bar.tick();
+
+            // Create the widget.ejs file
+            if (type === 'widget') {
+                let wfile  = mpath + '/widget.ejs';
+                if (!fs.existsSync(wfile)) {
+                    let widget = `<!--// Widget ${id} //-->`;
+                    fs.writeFileSync(wfile, widget);
+                }
+            }
+
+            bar.tick();
+
+        } else {
+            bar.interrupt(type, id, 'already exists');
+            bar.terminate();
+        }
     }
-
-    let name     = slugify(String(opt.name).toLowerCase());
-    let stubs    = `${__dirname}/stub/theme`;
-    let path     = `${base}/src/app/view/themes/${name}`;
-    let css      = `${base}/src/public/src/css`;
-
-    // delete the previous version of the theme if it exists
-    fs.removeSync(path);
-
-    fs.ensureDirSync(`${path}/partials`);
-    fs.ensureDirSync(`${path}/templates`);
-
-    fs.ensureDirSync(`${css}/${name}/`);
-    fs.writeFileSync(`${css}/${name}/.gitignore`, '# gitignore');
-    fs.writeFileSync(`${css}/${name}.scss`, `/* ${name} styles */`);
-
-
-    // Create the head partial
-    fs.createReadStream(`${stubs}/head.ejs`).pipe(fs.createWriteStream(`${path}/partials/head.ejs`));
-
-    // Create the header parital
-    fs.createReadStream(`${stubs}/header.ejs`).pipe(fs.createWriteStream(`${path}/partials/header.ejs`));
-
-    // Create the footer parital
-    fs.createReadStream(`${stubs}/footer.ejs`).pipe(fs.createWriteStream(`${path}/partials/footer.ejs`));
-
-    // Create the index file
-    fs.createReadStream(`${stubs}/index.ejs`).pipe(fs.createWriteStream(`${path}/templates/index.ejs`));
-
-    log(chalk.green(`  created  theme:`), name);
 };
 
+const theme = {
+    prompt: (type, opt) => {
+        let schema = {
+            properties: {
+                name: {
+                    required:    true,
+                    description: chalk.yellow('Name:'),
+                    message:     'Name is required'
+                }
+            }
+        };
+
+        prompter(type, opt, schema, theme.create);
+    },
+
+    create: (type, opt) => {
+        let name     = slugify(String(opt.name).toLowerCase());
+        let stubs    = `${__dirname}/stub/theme`;
+        let path     = `${base}/src/app/view/themes/${name}`;
+        let css      = `${base}/src/public/src/css`;
+        let bar      = new ProgressBar(chalk.red(':bar') + ' :percent', {
+            complete      : chalk.bgRed(' '),
+            incomplete    : ' ',
+            width         : 20,
+            total         : 10
+        });
+
+        // delete the previous version of the theme if it exists
+        fs.removeSync(path);
+        bar.tick();
+
+        fs.ensureDirSync(`${path}/partials`);
+        bar.tick();
+
+        fs.ensureDirSync(`${path}/templates`);
+        bar.tick();
+
+        fs.ensureDirSync(`${css}/${name}/`);
+        bar.tick();
+
+        fs.writeFileSync(`${css}/${name}/.gitignore`, '# gitignore');
+        bar.tick();
+
+        fs.writeFileSync(`${css}/${name}.scss`, `/* ${name} styles */`);
+        bar.tick();
+
+
+        // Create the head partial
+        let streamHead = fs.createWriteStream(`${path}/partials/head.ejs`);
+        streamHead.on('finish', function() { bar.tick(); });
+        fs.createReadStream(`${stubs}/head.ejs`).pipe(streamHead);
+
+        // Create the header parital
+        let streamHeader = fs.createWriteStream(`${path}/partials/header.ejs`);
+        streamHeader.on('finish', function() { bar.tick(); });
+        fs.createReadStream(`${stubs}/header.ejs`).pipe(streamHeader);
+
+        // Create the footer parital
+        let streamFooter = fs.createWriteStream(`${path}/partials/footer.ejs`);
+        streamFooter.on('finish', function() { bar.tick(); });
+        fs.createReadStream(`${stubs}/footer.ejs`).pipe(streamFooter);
+
+        // Create the index file
+        let streamIndex = fs.createWriteStream(`${path}/templates/index.ejs`);
+        streamIndex.on('finish', function() { bar.tick(); });
+        fs.createReadStream(`${stubs}/index.ejs`).pipe(streamIndex);
+    }
+};
 
 /**
  *
@@ -571,7 +667,7 @@ const install = {
                     message: 'Passwords do not match',
                     conform: function (input) {
                         let pass = prompt.history('password') || opt['password'];
-                        return Boolean(pass === input);
+                        return Boolean(pass.value === input);
                     }
                 },
                 db: {
@@ -587,7 +683,7 @@ const install = {
             }
         };
 
-        prompt.message = '  > ';
+        prompt.message = '> ';
         prompt.delimiter = '';
         prompt.override = opt;
         prompt.start();
