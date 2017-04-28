@@ -1148,11 +1148,22 @@ program.command('launch')
             let txt    = data.toString();
             txt        = txt.replace(/\r?\n|\r/g, '');
             txt        = txt.replace( /-+/g, '-');
+            txt        = txt.replace(/\[(.+?)\]/g, '');
             txt        = String(txt).trim();
-            txt        = (txt.length < 3) ? msg : txt;
             txt        = (txt.indexOf('waiting for changes before restart') > -1) ? msg : txt;
+            txt        = (txt.indexOf('UI External') > -1) ? msg : txt;
+            txt        = (txt.length < 3) ? msg : txt;
 
             spinner.text = txt;
+        });
+
+        process.on('SIGINT', function () {
+            gulp.kill();
+
+            spinner.succeed('Jam terminated');
+            log('');
+
+            process.exit();
         });
     })
     .on('--help', () => {
