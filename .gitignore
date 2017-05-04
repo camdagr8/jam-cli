@@ -40,3 +40,5 @@ jspm_packages
 *.komodo*
 
 tmp
+
+.idea
