@@ -902,7 +902,7 @@ const launch = () => {
         txt        = (txt.indexOf('Server running') > -1) ? msg : txt;
         txt        = (txt.indexOf('waiting for changes before restart') > -1) ? msg : txt;
 
-        spinner.text = txt;
+        spinner.text = String(txt).substr(0, 20);
     });
 
     process.on('SIGINT', function () {
