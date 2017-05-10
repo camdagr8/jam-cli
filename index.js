@@ -436,7 +436,7 @@ const do_restore = (opt, callback) => {
     let spinner = ora({
         text       : 'Restoring database...',
         spinner    : 'dots',
-        color      : 'green'
+        color      : 'cyan'
     });
 
     spinner.start();
@@ -497,7 +497,7 @@ const do_backup = (opt) => {
     let spinner = ora({
         text       : 'Backing up database...',
         spinner    : 'dots',
-        color      : 'green'
+        color      : 'cyan'
     });
 
     spinner.start();
@@ -550,7 +550,7 @@ const do_migration = (opt) => {
     let spinner = ora({
         text       : 'Migrating database...',
         spinner    : 'dots',
-        color      : 'green'
+        color      : 'cyan'
     });
 
     log('');
@@ -844,7 +844,7 @@ const install = {
         install.spinner = ora({
             text: 'Installing node modules...',
             spinner: 'dots',
-            color: 'green'
+            color: 'cyan'
         });
 
         install.spinner.start();
@@ -873,7 +873,45 @@ const install = {
     }
 };
 
+const launch = () => {
 
+    let spinner = ora({
+        text       : 'Launching Jam...',
+        spinner    : 'dots',
+        color      : 'cyan'
+    });
+
+    log('');
+
+    spinner.start();
+
+    let msg     = 'Running Jam: Press '+chalk.cyan('ctrl + c')+' to exit  ';
+    let gulp    = spawn('gulp', ['--dev']);
+
+    gulp.stdout.on('data', function (data) {
+        let txt    = data.toString();
+        txt        = txt.replace(/\r?\n|\r/g, '');
+        txt        = txt.replace( /-+/g, '-');
+        txt        = txt.replace(/\[(.+?)\]/g, '');
+        txt        = String(txt).trim();
+        txt        = (txt.length < 3) ? msg : txt;
+        txt        = (txt.indexOf('Reloading') > -1) ? msg : txt;
+        txt        = (txt.indexOf('UI External') > -1) ? msg : txt;
+        txt        = (txt.indexOf('Server running') > -1) ? msg : txt;
+        txt        = (txt.indexOf('waiting for changes before restart') > -1) ? msg : txt;
+
+        spinner.text = txt;
+    });
+
+    process.on('SIGINT', function () {
+        gulp.kill();
+
+        spinner.succeed('Jam terminated');
+        log('');
+
+        process.exit();
+    });
+}
 /**
  * -----------------------------------------------------------------------------
  * CLI Commands
@@ -1129,43 +1167,7 @@ program.command('install')
 
 program.command('launch')
     .description('Launch Jam dev environment')
-    .action(() => {
-
-        let spinner = ora({
-            text       : 'Launching Jam...',
-            spinner    : 'dots',
-            color      : 'green'
-        });
-
-        log('');
-
-        spinner.start();
-
-        let msg     = 'Running Jam: Press cntr + c to exit  ';
-        let gulp    = spawn('gulp', ['--dev']);
-
-        gulp.stdout.on('data', function (data) {
-            let txt    = data.toString();
-            txt        = txt.replace(/\r?\n|\r/g, '');
-            txt        = txt.replace( /-+/g, '-');
-            txt        = txt.replace(/\[(.+?)\]/g, '');
-            txt        = String(txt).trim();
-            txt        = (txt.indexOf('waiting for changes before restart') > -1) ? msg : txt;
-            txt        = (txt.indexOf('UI External') > -1) ? msg : txt;
-            txt        = (txt.length < 3) ? msg : txt;
-
-            spinner.text = txt;
-        });
-
-        process.on('SIGINT', function () {
-            gulp.kill();
-
-            spinner.succeed('Jam terminated');
-            log('');
-
-            process.exit();
-        });
-    })
+    .action(launch)
     .on('--help', () => {
         log('  Examples:');
         log('    $ jam launch');
@@ -1182,7 +1184,7 @@ program.command('build')
         let spinner = ora({
             text: 'Building Jam...',
             spinner: 'dots',
-            color: 'green',
+            color: 'cyan',
         });
 
         spinner.start();
