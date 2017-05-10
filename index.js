@@ -842,7 +842,7 @@ const install = {
 
     npm: () => {
         install.spinner = ora({
-            text: 'Installing node modules...',
+            text: 'installing dependencies, this may take awhile...',
             spinner: 'dots',
             color: 'cyan'
         });
@@ -858,7 +858,9 @@ const install = {
             if (txt.indexOf('post_install.js') > -1 && pi !== true) { pi = true; }
             if (pi === true) { return; }
 
-            install.spinner.text = txt;
+            txt = (txt.indexOf('│') > -1) ? 'dependency install complete!' : txt;
+
+            install.spinner.text = String(txt).substr(0, 20);
         });
 
         npm.stdout.on('close', function () {
