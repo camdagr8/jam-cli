@@ -99,14 +99,8 @@ const prompter = (type, opt, schema, callback) => {
             log(prefix, chalk.red('error:'), err);
             process.exit();
         } else {
-            _.keys(prompt.override).forEach((key) => { result[key] = prompt.override[key]; });
-            _.keys(result).forEach((key) => {
-                if (_.isEmpty(result[key])) {
-                    delete result[key];
-                }
-            });
-
-            callback(type, result);
+            _.keys(result).forEach((key) => { params[key] = result[key]; });
+            callback(type, params);
         }
     });
 };
@@ -211,6 +205,8 @@ const plugin = {
             mpath = mpath.join('/');
             mpath = mpath.replace(/\/\/+/g, '/');
         }
+
+
 
         // Create the module directory if it doesn't exist
         fs.ensureDirSync(mpath);
@@ -902,15 +898,12 @@ const launch = () => {
         txt        = (txt.indexOf('Server running') > -1) ? msg : txt;
         txt        = (txt.indexOf('waiting for changes before restart') > -1) ? msg : txt;
 
-        spinner.text = String(txt).substr(0, 20);
+        spinner.text = txt;
     });
 
     process.on('SIGINT', function () {
         gulp.kill();
-
-        spinner.succeed('Jam terminated');
-        log('');
-
+        spinner.succeed('Jam terminated\n');
         process.exit();
     });
 }

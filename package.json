@@ -1,6 +1,6 @@
 {
   "name": "brkfst-jam-cli",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Jam Command-Line Interface",
   "main": "index.js",
   "scripts": {
