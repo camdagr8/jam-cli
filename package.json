@@ -1,6 +1,6 @@
 {
   "name": "brkfst-jam-cli",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Jam Command-Line Interface",
   "main": "index.js",
   "scripts": {
@@ -28,6 +28,7 @@
     "decompress": "^4.0.0",
     "fs-extra": "^2.1.2",
     "git": "^0.1.5",
+    "gulp": "^3.9.1",
     "js-beautify": "^1.6.11",
     "moment": "^2.18.1",
     "mongodb": "^2.2.25",
